@@ -6,6 +6,7 @@ BTick integrates with ROS 2 to provide real-time Behavior Tree monitoring and in
 
 The integration connects BTick to the BehaviorTree.CPP execution and monitoring interfaces to expose tree structure, runtime state transitions, and supported debugging controls.
 
+![alt text](demo.gif)
 
 ## Prerequisites & Dependencies
 
