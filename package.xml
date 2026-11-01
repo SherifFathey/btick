@@ -6,7 +6,9 @@
   <description>BTick - Lightweight client library for ROS 2 BehaviorTree observation and Nav2 logging</description>
   <maintainer email="sheriffathey@outlook.com">Sherif Fathey</maintainer>
   <author email="sheriffathey@outlook.com">Sherif Fathey</author>
-  <url type="website">https://github.com/SherifFathey</url>
+  <url type="website">https://github.com/SherifFathey/btick</url>
+  <url type="repository">https://github.com/SherifFathey/btick</url>
+  <url type="bugtracker">https://github.com/SherifFathey/btick/issues</url>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
@@ -14,9 +16,8 @@
   <depend>rclcpp</depend>
   <depend>behaviortree_cpp</depend>
   <depend>std_msgs</depend>
-  <depend>pugixml</depend>
+  <depend>pugixml-dev</depend>
   <depend>nlohmann-json-dev</depend>
-
 
   <export>
     <build_type>ament_cmake</build_type>
