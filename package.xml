@@ -15,7 +15,7 @@
   <depend>behaviortree_cpp</depend>
   <depend>std_msgs</depend>
   <depend>pugixml</depend>
-  <depend>nlohmann_json</depend>
+  <depend>nlohmann-json-dev</depend>
 
 
   <export>
