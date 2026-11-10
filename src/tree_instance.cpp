@@ -1046,6 +1046,7 @@ void TreeInstance::set_status(TreeStatus new_status) {
     std::lock_guard<std::mutex> lock(mutex_);
     status_.store(new_status);
     discovery_json_dirty_ = true;
+    ++structure_revision_;
   }
   { std::lock_guard<std::mutex> lock(mutex_faults_); }
   cv_fault_.notify_all();
@@ -1162,7 +1163,11 @@ void TreeInstance::callback(BT::Duration /*timestamp*/, const BT::TreeNode &node
     ev.duration = last_duration;
     ev.tick_count = tick_count;
     ev.timestamp = ts;
-    ev.blackboard_json = get_blackboard_json(node.config().blackboard.get());
+    // Only blackboard entries that changed since the previous transition:
+    // serializing the whole blackboard into every transition dominated the
+    // message size. Consumers merge these updates incrementally, and every
+    // tree snapshot (tree_created) still carries the full blackboard.
+    ev.blackboard_json = get_blackboard_delta_json_locked(node.config().blackboard.get());
     auto port_event = pending_port_event_json_.find(uid);
     if (port_event != pending_port_event_json_.end()) {
       ev.output_ports_json = std::move(port_event->second);
@@ -1255,6 +1260,25 @@ std::string TreeInstance::get_blackboard_json(const BT::Blackboard *preferred_bb
   return values.dump();
 }
 
+std::string TreeInstance::get_blackboard_delta_json_locked(const BT::Blackboard *preferred_bb) {
+  nlohmann::json values;
+  try {
+    values = nlohmann::json::parse(get_blackboard_json(preferred_bb));
+  } catch (const std::exception &) {
+    return "{}";
+  }
+  nlohmann::json delta = nlohmann::json::object();
+  for (auto it = values.begin(); it != values.end(); ++it) {
+    std::string serialized = it.value().dump();
+    auto sent = last_sent_blackboard_.find(it.key());
+    if (sent == last_sent_blackboard_.end() || sent->second != serialized) {
+      last_sent_blackboard_[it.key()] = std::move(serialized);
+      delta[it.key()] = it.value();
+    }
+  }
+  return delta.dump();
+}
+
 std::string TreeInstance::to_json_tree_created() const {
   std::lock_guard<std::mutex> lock(mutex_);
   if (!discovery_json_dirty_) {
@@ -1277,7 +1301,8 @@ std::string TreeInstance::to_json_tree_created() const {
   result["xml_path"] = xml_path_;
   result["status"] = tree_status_to_string(status_);
   result["blackboard"] = nlohmann::json::parse(get_blackboard_json());
-  discovery_json_cache_ = result.dump(2) + "\n";
+  // Compact JSON: snapshots of large trees are hundreds of kB pretty-printed.
+  discovery_json_cache_ = result.dump() + "\n";
   discovery_json_dirty_ = false;
   return discovery_json_cache_;
 }
@@ -1563,6 +1588,7 @@ bool TreeInstance::set_node_port_value(uint16_t uid, const std::string &port_nam
   {
     std::lock_guard<std::mutex> lock(mutex_);
     discovery_json_dirty_ = true;
+    ++structure_revision_;
     if (!node_id.empty() && model_.nodes.count(node_id)) {
       auto &n_mod = model_.nodes.at(node_id);
       node_name = n_mod.name;

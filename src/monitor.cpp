@@ -640,21 +640,13 @@ void Monitor::init(rclcpp::Node *node, const BT::Tree &tree, const std::string &
 
     auto last_full_publish = std::chrono::steady_clock::now();
     auto burst_count = std::make_shared<uint32_t>(0);
-    std::function<void()> discovery_callback = [this, last_full_publish, burst_count]() mutable {
+    auto published_revisions = std::make_shared<std::unordered_map<std::string, uint64_t>>();
+    std::function<void()> discovery_callback = [this, last_full_publish, burst_count,
+                                                published_revisions]() mutable {
       if (detached_ || !discovery_pub_) {
         return;
       }
       const auto now = std::chrono::steady_clock::now();
-      // Keep full snapshots within consumer liveness windows without
-      // flooding transient-local QoS history.
-      if (*burst_count >= 10 && now - last_full_publish < std::chrono::seconds(1)) {
-        return;
-      }
-      last_full_publish = now;
-      if (*burst_count < 10) {
-        ++*burst_count;
-      }
-
       std::vector<std::shared_ptr<TreeInstance>> instances;
       {
         std::lock_guard<std::mutex> lock(instances_mutex_);
@@ -662,7 +654,33 @@ void Monitor::init(rclcpp::Node *node, const BT::Tree &tree, const std::string &
           instances.push_back(entry.second);
         }
       }
+      // After a short start-up burst, the full snapshot is only republished
+      // when it changed in a way transitions do not convey (structure
+      // revision) or after a slow refresh period. Live state is carried by
+      // /btick/tree_transitions, late joiners get the last snapshot from the
+      // transient-local history and can request a fresh one with get_tree.
+      // Republishing every second sent hundreds of kB/s for large trees and
+      // made every consumer reload the whole tree.
+      constexpr auto kSnapshotRefreshPeriod = std::chrono::seconds(15);
+      bool structure_changed = false;
       for (const auto &instance : instances) {
+        const auto published = published_revisions->find(instance->tree_id());
+        if (published == published_revisions->end() ||
+            published->second != instance->structure_revision()) {
+          structure_changed = true;
+        }
+      }
+      if (*burst_count >= 10 && !structure_changed &&
+          now - last_full_publish < kSnapshotRefreshPeriod) {
+        return;
+      }
+      last_full_publish = now;
+      if (*burst_count < 10) {
+        ++*burst_count;
+      }
+
+      for (const auto &instance : instances) {
+        (*published_revisions)[instance->tree_id()] = instance->structure_revision();
         std_msgs::msg::String discovery_msg;
         discovery_msg.data = instance->to_json_tree_created();
         discovery_pub_->publish(discovery_msg);

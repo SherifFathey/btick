@@ -62,6 +62,11 @@ class TreeInstance : public BT::StatusChangeLogger {
   std::string to_json_tree_created() const;
   std::string get_blackboard_json(const BT::Blackboard *preferred_bb = nullptr) const;
 
+  // Incremented whenever the tree snapshot changes in a way that is not
+  // conveyed by transition events (tree lifecycle status, port remapping).
+  // Monitors use it to decide when the full snapshot must be republished.
+  uint64_t structure_revision() const { return structure_revision_.load(); }
+
   using EventListener = std::function<void(const NodeStatusEvent &)>;
   using ListenerHandle = uint64_t;
 
@@ -109,6 +114,8 @@ class TreeInstance : public BT::StatusChangeLogger {
   };
 
   void wait_for_hooks();
+  // Blackboard entries that changed since the previous call (mutex_ held).
+  std::string get_blackboard_delta_json_locked(const BT::Blackboard *preferred_bb);
   BTPortDetail resolve_port(const BT::TreeNode &node, const std::string &port_name,
                             const BTPortDetail *xml_port = nullptr) const;
   void apply_port_to_node(BT::TreeNode *n, const std::string &port_name, const std::string &value);
@@ -131,6 +138,10 @@ class TreeInstance : public BT::StatusChangeLogger {
   BTTreeModel model_;
   mutable std::string discovery_json_cache_;
   mutable bool discovery_json_dirty_{true};
+  std::atomic<uint64_t> structure_revision_{0};
+  // Last blackboard value (serialized JSON) sent per key in a transition;
+  // transitions only carry entries that changed since. Guarded by mutex_.
+  std::unordered_map<std::string, std::string> last_sent_blackboard_;
   BT::Blackboard::Ptr root_bb_;
   std::vector<BT::Blackboard::Ptr> blackboards_;
 
