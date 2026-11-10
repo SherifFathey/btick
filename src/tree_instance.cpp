@@ -1178,6 +1178,7 @@ void TreeInstance::callback(BT::Duration /*timestamp*/, const BT::TreeNode &node
 
     if (status_ == TreeStatus::CREATED) {
       status_ = TreeStatus::RUNNING;
+    ++structure_revision_;
     }
     discovery_json_dirty_ = true;
 
