@@ -8,11 +8,24 @@ The integration connects BTick to the BehaviorTree.CPP execution and monitoring 
 
 ![BTick Demo](btick_demo.gif)
 
-## Prerequisites & Dependencies
+## Installation
+
+### Option 1: Binary Installation (Recommended)
+
+If you are using ROS 2 Jazzy, you can install the binary package directly via `apt`:
+
+```bash
+sudo apt update
+sudo apt install ros-jazzy-btick
+```
+
+### Option 2: Build from Source
+
+#### Prerequisites & Dependencies
 
 Ensure ROS 2 and the required BehaviorTree.CPP dependencies are installed and available in your environment.
 
-## Building the `btick` Package
+#### Building the `btick` Package
 
 Clone the repository into a ROS 2 workspace:
 

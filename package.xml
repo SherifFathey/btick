@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>btick</name>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <description>BTick - Lightweight client library for ROS 2 BehaviorTree observation and Nav2 logging</description>
   <maintainer email="sheriffathey@outlook.com">Sherif Fathey</maintainer>
   <author email="sheriffathey@outlook.com">Sherif Fathey</author>
