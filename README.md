@@ -1,4 +1,7 @@
-# BTick
+
+<p align="center">
+  <img src="btick_ascii.svg" alt="BTick" />
+</p>
 
 BTick integrates with ROS 2 to provide real-time Behavior Tree monitoring and interactive debugging for [BehaviorTree.CPP v4](https://github.com/BehaviorTree/BehaviorTree.CPP) applications.
 
@@ -12,11 +15,24 @@ The integration connects BTick to the BehaviorTree.CPP execution and monitoring 
 
 ### Option 1: Binary Installation (Recommended)
 
-If you are using ROS 2 Jazzy, you can install the binary package directly via `apt`:
+Binary packages are available for ROS 2 (**Jazzy**, **Kilted**, and **Lycal**). If your ROS 2 environment is sourced, you can install the package directly via `apt`:
 
 ```bash
 sudo apt update
+sudo apt install ros-$ROS_DISTRO-btick
+```
+
+Alternatively, you can specify your distribution explicitly (`jazzy`, `kilted`, or `lycal`):
+
+```bash
+# ROS 2 Jazzy
 sudo apt install ros-jazzy-btick
+
+# ROS 2 Kilted
+sudo apt install ros-kilted-btick
+
+# ROS 2 Lycal
+sudo apt install ros-lycal-btick
 ```
 
 ### Option 2: Build from Source
